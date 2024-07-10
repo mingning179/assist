@@ -25,9 +25,9 @@ import java.text.SimpleDateFormat
 
 
 class MainActivity : ComponentActivity() {
-    var wza = mutableStateOf(false)
-    var dataService: DataService? = null
-    var sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    private var wza = mutableStateOf(false)
+    private lateinit var dataService: DataService
+    private var sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -36,6 +36,12 @@ class MainActivity : ComponentActivity() {
         accessibilityManager.addAccessibilityStateChangeListener { enabled -> wza.value = enabled }
         wza.value = accessibilityManager.isEnabled
         dataService = DataService(this)
+    }
+    override fun onResume() {
+        super.onResume()
+        flushContent()
+    }
+    private fun flushContent() {
         setContent {
             AssistTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -66,14 +72,21 @@ class MainActivity : ComponentActivity() {
             }
             Text(
                 text = "最近签到时间: ${
-                    if (dataService?.lastSignTime == null) "无" else sdf.format(dataService?.lastSignTime)
+                    if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
                 }",
                 modifier = modifier,
             )
             Text(
-                text = "今日签到次数: ${if (dataService?.signCount != -1) dataService?.signCount else "未知"}",
+                text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
                 modifier = modifier,
             )
+            Button(onClick = {
+                dataService.cleanData()
+                //刷新界面
+                flushContent()
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("清除数据")
+            }
         }
     }
 

@@ -47,4 +47,9 @@ public class DataService {
         }
         return prefs.getInt(SIGN_COUNT, 0);
     }
+
+    public void cleanData() {
+        // 清除数据
+        prefs.edit().clear().apply();
+    }
 }
