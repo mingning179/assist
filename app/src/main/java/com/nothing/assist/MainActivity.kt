@@ -87,6 +87,11 @@ class MainActivity : ComponentActivity() {
             }, shape = AbsoluteRoundedCornerShape(8f)) {
                 Text("清除数据")
             }
+            Button(onClick = {
+                dataService.openApp(context)
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("打开目标APP")
+            }
         }
     }
 

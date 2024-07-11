@@ -1,7 +1,11 @@
 package com.nothing.assist;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.widget.Toast;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -51,5 +55,26 @@ public class DataService {
     public void cleanData() {
         // 清除数据
         prefs.edit().clear().apply();
+    }
+
+    public boolean isTodaySigned() {
+        // 判断今天是否已经签到
+        return getSignCount() > 0;
+    }
+
+    public void openApp(@NotNull Context context) {
+        String packageName = "com.myway.fxry";
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            packageManager.getPackageInfo(packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES);
+            Intent launchIntent = packageManager.getLaunchIntentForPackage(packageName);
+            if (launchIntent != null) {
+                context.startActivity(launchIntent);
+            } else {
+                Toast.makeText(context, "无法启动应用", Toast.LENGTH_SHORT).show();
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Toast.makeText(context, "无法找到应用", Toast.LENGTH_SHORT).show();
+        }
     }
 }
