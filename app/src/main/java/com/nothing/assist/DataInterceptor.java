@@ -6,8 +6,6 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 public class DataInterceptor {
@@ -26,14 +24,14 @@ public class DataInterceptor {
                     recordMy(event);
                 }
                 if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                    Log.i(TAG, String.format("View被点击事件: %s ", event.getText().size() > 0 ? event.getText().get(0) : null));
+                    Log.i(TAG, String.format("View被点击事件: %s ", !event.getText().isEmpty() ? event.getText().get(0) : null));
                     recordSign(event);
                 }
                 if (shouldClickMy && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
                     Log.i(TAG, String.format("待执行点击: %s ", event.getContentDescription()));
                     clickMy(event);
                 }
-                Log.i(TAG, String.format("onAccessibilityEvent: %s ", event.toString()));
+                Log.i(TAG, String.format("onAccessibilityEvent: %s ", event));
             }
         } catch (Exception e) {
             Log.e(TAG, "interceptData: ", e);
@@ -55,8 +53,11 @@ public class DataInterceptor {
     private synchronized static void clickMy(AccessibilityEvent event) {
         if (contains(event, "我的") && shouldClickMy) {
             AccessibilityNodeInfo root = getRootContent(event);
+            if(root==null){
+                return;
+            }
             List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("我的");
-            if (nodes.size() > 0) {
+            if (!nodes.isEmpty()) {
                 AccessibilityNodeInfo myNode = nodes.get(0).getParent();
                 myNode.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                 shouldClickMy = false;
@@ -71,6 +72,9 @@ public class DataInterceptor {
     private static void recordMy(AccessibilityEvent event) throws ParseException {
         if (contains(event, "今日签到")) {
             AccessibilityNodeInfo root = getRootContent(event);
+            if(root==null){
+                return;
+            }
             AccessibilityNodeInfo contentRoot = root.findAccessibilityNodeInfosByText("今日签到").get(0).getParent();
             int qdIndex = -1;
             int qdcsIndex = -1;
@@ -105,6 +109,9 @@ public class DataInterceptor {
     //获取根节点
     private static AccessibilityNodeInfo getRootContent(AccessibilityEvent event) {
         AccessibilityNodeInfo root = event.getSource();
+        if(root==null){
+            return null;
+        }
         while (root.getParent() != null) {
             root = root.getParent();
         }
@@ -113,18 +120,21 @@ public class DataInterceptor {
 
     //判断是否包含目标值
     static boolean contains(AccessibilityEvent event, String targetValue) {
-        List<AccessibilityNodeInfo> nodes = getRootContent(event).findAccessibilityNodeInfosByText(targetValue);
-        return nodes.size() > 0;
+        AccessibilityNodeInfo root = getRootContent(event);
+        if(root==null){
+            return false;
+        }
+        return !root.findAccessibilityNodeInfosByText(targetValue).isEmpty();
     }
 
     //初始化
     public static void init(AssistService assistService) {
         dataService = new DataService(assistService.getApplicationContext());
-        Log.i(TAG, String.format("服务初始化: %s ,%s", assistService.toString(), String.valueOf(System.currentTimeMillis())));
+        Log.i(TAG, String.format("服务初始化: %s ,%s", assistService, System.currentTimeMillis()));
     }
 
     //服务中断
     public static void onInterrupt() {
-        Log.i(TAG, String.format("服务中断: %s", String.valueOf(System.currentTimeMillis())));
+        Log.i(TAG, String.format("服务中断: %s", System.currentTimeMillis()));
     }
 }
