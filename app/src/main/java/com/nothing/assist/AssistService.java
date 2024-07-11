@@ -47,8 +47,6 @@ public class AssistService extends AccessibilityService {
                 System.out.println(sdf.format(calendar.getTime()));
                 long currentTime = System.currentTimeMillis();
                 long sleepTime = tomorrowEightAMTimestamp - currentTime;
-                //TODO this is test
-                sleepTime = 1 * 60 * 60 * 1000;
 
                 Log.i("AssistService", "今天已经签到, 休眠到明天早上8点, 时长: " + sleepTime);
                 realSleepTime = sleepTime;
