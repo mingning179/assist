@@ -42,7 +42,7 @@ public class DataInterceptor {
 
     //记录签到动作
     private static void recordSign(AccessibilityEvent event) {
-        if (!event.getText().toString().equals("签      到")) {
+        if (!event.getClassName().toString().equals("android.widget.Button")||!event.getText().get(0).toString().equals("签      到")) {
             Log.i(TAG, String.format("recordSign: 不是签到按钮 %s %s", event.getClassName(), event.getText()));
             return;
         } else {
@@ -87,11 +87,17 @@ public class DataInterceptor {
             }
             if (qdIndex != -1) {
                 AccessibilityNodeInfo qdNode = contentRoot.getChild(qdIndex);
-                dataService.setLastSignTime(dtf.parse(qdNode.getText().toString().trim()));
+                if (qdNode.getText() != null) {
+                    Log.i(TAG, "recordMy: 最近签到时间 " + qdNode.getText());
+                    dataService.setLastSignTime(dtf.parse(qdNode.getText().toString().trim()));
+                }
             }
             if (qdcsIndex != -1) {
                 AccessibilityNodeInfo signTimesNode = contentRoot.getChild(qdcsIndex);
-                dataService.setSignCount(Integer.parseInt(signTimesNode.getText().toString().trim()));
+                if (signTimesNode.getText() != null) {
+                    Log.i(TAG, "recordMy: 签到次数 " + signTimesNode.getText());
+                    dataService.setSignCount(Integer.parseInt(signTimesNode.getText().toString().trim()));
+                }
             }
         }
     }
