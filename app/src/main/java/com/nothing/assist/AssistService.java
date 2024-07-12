@@ -14,46 +14,33 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-public class AssistService extends AccessibilityService {
+public class AssistService extends AccessibilityService implements AccessibilityManager.AccessibilityStateChangeListener {
     private PendingIntent pendingIntent;
     private AlarmManager alarmManager;
-    private final Long notifyTime=2*60*1000L;
-    private Long realSleepTime ;
+    private final Long notifyTime = 2 * 60 * 1000L;
+    private Long realSleepTime;
     public static final String ACTION_NOTIFICATION_TASK = "ACTION_NOTIFICATION_TASK";
     private DataService dataService;
     private DataInterceptor dataInterceptor;
-
+    AccessibilityManager accessibilityManager;
     private PowerManager powerManager;
+
     @Override
     public void onCreate() {
         super.onCreate();
         Log.i("AssistService", "onCreate");
+        initConfig();
         dataService = new DataService(this);
         dataInterceptor = new DataInterceptor(dataService);
-        powerManager= (PowerManager) getSystemService(Context.POWER_SERVICE);
-
+        powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(this, AlarmReceiver.class);
-        pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        initConfig();
-        AccessibilityManager accessibilityManager = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
-        accessibilityManager.addAccessibilityStateChangeListener(enabled -> {
-            Log.i("AssistService", "onAccessibilityStateChanged: " + enabled);
-            if(!enabled){
-                Log.i("AssistService", "辅助功能被关闭，取消定时任务");
-                alarmManager.cancel(pendingIntent);
-            }else {
-                initConfig();
-                Log.i("AssistService", "辅助功能被打开，重新设置定时任务");
-                setAlarm(realSleepTime);
-            }
-        });
-
+        pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(this, AlarmReceiver.class), PendingIntent.FLAG_IMMUTABLE);
+        accessibilityManager = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        accessibilityManager.addAccessibilityStateChangeListener(this);
         setAlarm(realSleepTime);
     }
-    private void initConfig()
-    {
-        realSleepTime=notifyTime;
+    private void initConfig() {
+        realSleepTime = notifyTime;
     }
 
     @Override
@@ -68,6 +55,7 @@ public class AssistService extends AccessibilityService {
     private void setAlarm(long notifyTime) {
         alarmManager.cancel(pendingIntent);
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + notifyTime, pendingIntent);
+        Log.i("AssistService", "添加定时任务(添加之前会取消之前的定时任务): " + notifyTime + "ms");
     }
 
     private void processNotify() {
@@ -122,7 +110,7 @@ public class AssistService extends AccessibilityService {
             startActivity(intent);
             if (!powerManager.isInteractive()) {
                 Log.i("AssistService", "屏幕已熄灭, 5倍时间后再次提醒");
-                realSleepTime = notifyTime*5;
+                realSleepTime = notifyTime * 5;
                 return;
             } else {
                 Log.i("AssistService", "屏幕已点亮，正常弹出提醒界面");
@@ -143,5 +131,26 @@ public class AssistService extends AccessibilityService {
     @Override
     public void onInterrupt() {
         Log.i("AssistService", "onInterrupt");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        accessibilityManager.removeAccessibilityStateChangeListener(this);
+        alarmManager.cancel(pendingIntent);
+        Log.i("AssistService", "onDestroy 取消定时任务");
+        Log.i("AssistService", "onDestroy");
+    }
+
+    @Override
+    public void onAccessibilityStateChanged(boolean enabled) {
+        if (!enabled) {
+            Log.i("AssistService", "辅助功能被关闭, 取消定时任务");
+            alarmManager.cancel(pendingIntent);
+        } else {
+            initConfig();
+            Log.i("AssistService", "辅助功能被打开");
+            setAlarm(realSleepTime);
+        }
     }
 }
