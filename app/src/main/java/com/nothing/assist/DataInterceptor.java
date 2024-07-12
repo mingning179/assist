@@ -9,12 +9,16 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 
 public class DataInterceptor {
-    private static final String TAG = "DataInterceptor";
-    private static final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private static DataService dataService;
-    private static boolean shouldClickMy = false;
+    private final String TAG = "DataInterceptor";
+    private final SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final DataService dataService;
+    private boolean shouldClickMy = false;
 
-    public static void interceptData(AccessibilityEvent event) {
+    public DataInterceptor(DataService dataService) {
+        this.dataService = dataService;
+    }
+
+    public void interceptData(AccessibilityEvent event) {
         try {
             String packageName = event.getPackageName().toString();
             // 拦截 在矫通 应用内的数据
@@ -39,8 +43,8 @@ public class DataInterceptor {
     }
 
     //记录签到动作
-    private static void recordSign(AccessibilityEvent event) {
-        if (!event.getClassName().toString().equals("android.widget.Button")||!event.getText().get(0).toString().equals("签      到")) {
+    private void recordSign(AccessibilityEvent event) {
+        if (!event.getClassName().toString().equals("android.widget.Button") || !event.getText().get(0).toString().equals("签      到")) {
             Log.i(TAG, String.format("recordSign: 不是签到按钮 %s %s", event.getClassName(), event.getText()));
             return;
         } else {
@@ -50,10 +54,10 @@ public class DataInterceptor {
     }
 
     //点击我的 以便获取签到信息
-    private synchronized static void clickMy(AccessibilityEvent event) {
+    private synchronized void clickMy(AccessibilityEvent event) {
         if (contains(event, "我的") && shouldClickMy) {
             AccessibilityNodeInfo root = getRootContent(event);
-            if(root==null){
+            if (root == null) {
                 return;
             }
             List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText("我的");
@@ -69,10 +73,10 @@ public class DataInterceptor {
     }
 
     //记录签到信息
-    private static void recordMy(AccessibilityEvent event) throws ParseException {
+    private void recordMy(AccessibilityEvent event) throws ParseException {
         if (contains(event, "今日签到")) {
             AccessibilityNodeInfo root = getRootContent(event);
-            if(root==null){
+            if (root == null) {
                 return;
             }
             AccessibilityNodeInfo contentRoot = root.findAccessibilityNodeInfosByText("今日签到").get(0).getParent();
@@ -107,9 +111,9 @@ public class DataInterceptor {
     }
 
     //获取根节点
-    private static AccessibilityNodeInfo getRootContent(AccessibilityEvent event) {
+    private AccessibilityNodeInfo getRootContent(AccessibilityEvent event) {
         AccessibilityNodeInfo root = event.getSource();
-        if(root==null){
+        if (root == null) {
             return null;
         }
         while (root.getParent() != null) {
@@ -119,22 +123,11 @@ public class DataInterceptor {
     }
 
     //判断是否包含目标值
-    static boolean contains(AccessibilityEvent event, String targetValue) {
+    private boolean contains(AccessibilityEvent event, String targetValue) {
         AccessibilityNodeInfo root = getRootContent(event);
-        if(root==null){
+        if (root == null) {
             return false;
         }
         return !root.findAccessibilityNodeInfosByText(targetValue).isEmpty();
-    }
-
-    //初始化
-    public static void init(AssistService assistService) {
-        dataService = new DataService(assistService.getApplicationContext());
-        Log.i(TAG, String.format("服务初始化: %s ,%s", assistService, System.currentTimeMillis()));
-    }
-
-    //服务中断
-    public static void onInterrupt() {
-        Log.i(TAG, String.format("服务中断: %s", System.currentTimeMillis()));
     }
 }

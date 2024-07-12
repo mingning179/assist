@@ -1,34 +1,78 @@
 package com.nothing.assist;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class AssistService extends AccessibilityService {
-    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    long notifyTime = 5*1000;
-    long realSleepTime = notifyTime;
-    DataService dataService;
+    private PendingIntent pendingIntent;
+    private AlarmManager alarmManager;
+    private final Long notifyTime=2*60*1000L;
+    private Long realSleepTime ;
+    public static final String ACTION_NOTIFICATION_TASK = "ACTION_NOTIFICATION_TASK";
+    private DataService dataService;
+    private DataInterceptor dataInterceptor;
 
+    private PowerManager powerManager;
     @Override
     public void onCreate() {
         super.onCreate();
-        dataService=new DataService(this);
-        scheduler.schedule(this::processNotify, realSleepTime, TimeUnit.MILLISECONDS);
+        Log.i("AssistService", "onCreate");
+        dataService = new DataService(this);
+        dataInterceptor = new DataInterceptor(dataService);
+        powerManager= (PowerManager) getSystemService(Context.POWER_SERVICE);
+
+        alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, AlarmReceiver.class);
+        pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        initConfig();
+        AccessibilityManager accessibilityManager = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        accessibilityManager.addAccessibilityStateChangeListener(enabled -> {
+            Log.i("AssistService", "onAccessibilityStateChanged: " + enabled);
+            if(!enabled){
+                Log.i("AssistService", "辅助功能被关闭，取消定时任务");
+                alarmManager.cancel(pendingIntent);
+            }else {
+                initConfig();
+                Log.i("AssistService", "辅助功能被打开，重新设置定时任务");
+                setAlarm(realSleepTime);
+            }
+        });
+
+        setAlarm(realSleepTime);
     }
+    private void initConfig()
+    {
+        realSleepTime=notifyTime;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i("AssistService", "onStartCommand");
+        if (intent != null && ACTION_NOTIFICATION_TASK.equals(intent.getAction())) {
+            processNotify();
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    private void setAlarm(long notifyTime) {
+        alarmManager.cancel(pendingIntent);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + notifyTime, pendingIntent);
+    }
+
     private void processNotify() {
         try {
             Log.i("AssistService", "notifyThread is 开始运行");
-            //TODO 检查是否有后台弹出界面的权限
-            // 弹出一个窗口通知用户
             AccessibilityNodeInfo rootInActiveWindow = this.getRootInActiveWindow();
             //判断今天是否已经签到
             if (dataService.isTodaySigned()) {
@@ -47,7 +91,7 @@ public class AssistService extends AccessibilityService {
                 System.out.println(sdf.format(calendar.getTime()));
                 long currentTime = System.currentTimeMillis();
                 long sleepTime = tomorrowEightAMTimestamp - currentTime;
-
+                sleepTime = 2 * 60 * 60 * 1000;
                 Log.i("AssistService", "今天已经签到, 休眠到明天早上8点, 时长: " + sleepTime);
                 realSleepTime = sleepTime;
                 return;
@@ -61,7 +105,11 @@ public class AssistService extends AccessibilityService {
                     realSleepTime = notifyTime;
                     return;
                 } else if (currentPackageName.equals("com.myway.fxry")) {
-                    Log.i("AssistService", "无需提醒，已经在目标应用界面");
+                    Log.i("AssistService", "无需提醒，已经在目标应用界面，用户可能正在打卡");
+                    realSleepTime = notifyTime;
+                    return;
+                } else if (currentPackageName.equals("com.android.camera")) {
+                    Log.i("AssistService", "无需提醒，在相机界面，用户可能正在打卡");
                     realSleepTime = notifyTime;
                     return;
                 }
@@ -72,34 +120,28 @@ public class AssistService extends AccessibilityService {
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
             startActivity(intent);
-            Log.i("AssistService", "notifyThread is 结束运行");
+            if (!powerManager.isInteractive()) {
+                Log.i("AssistService", "屏幕已熄灭, 5倍时间后再次提醒");
+                realSleepTime = notifyTime*5;
+                return;
+            } else {
+                Log.i("AssistService", "屏幕已点亮，正常弹出提醒界面");
+            }
             realSleepTime = notifyTime;
-        }finally {
+            Log.i("AssistService", "notifyThread is 结束运行");
+        } finally {
             //重新设置定时任务
-            scheduler.schedule(this::processNotify, realSleepTime, TimeUnit.MILLISECONDS);
+            setAlarm(realSleepTime);
         }
     }
 
     @Override
-    protected void onServiceConnected() {
-        DataInterceptor.init(this);
-    }
-
-    @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        DataInterceptor.interceptData(event);
+        dataInterceptor.interceptData(event);
     }
 
     @Override
     public void onInterrupt() {
         Log.i("AssistService", "onInterrupt");
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.i("AssistService", "onDestroy");
-        DataInterceptor.onInterrupt();
-        scheduler.shutdownNow();
     }
 }
