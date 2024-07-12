@@ -1,6 +1,5 @@
 package com.nothing.assist;
 
-import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 

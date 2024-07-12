@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
-import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -79,7 +78,6 @@ public class AssistService extends AccessibilityService implements Accessibility
                 System.out.println(sdf.format(calendar.getTime()));
                 long currentTime = System.currentTimeMillis();
                 long sleepTime = tomorrowEightAMTimestamp - currentTime;
-                sleepTime = 2 * 60 * 60 * 1000;
                 Log.i("AssistService", "今天已经签到, 休眠到明天早上8点, 时长: " + sleepTime);
                 realSleepTime = sleepTime;
                 return;
@@ -109,8 +107,8 @@ public class AssistService extends AccessibilityService implements Accessibility
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
             startActivity(intent);
             if (!powerManager.isInteractive()) {
-                Log.i("AssistService", "屏幕已熄灭, 5倍时间后再次提醒");
-                realSleepTime = notifyTime * 5;
+                Log.i("AssistService", "屏幕已熄灭, 3倍时间后再次提醒");
+                realSleepTime = notifyTime * 2;
                 return;
             } else {
                 Log.i("AssistService", "屏幕已点亮，正常弹出提醒界面");
