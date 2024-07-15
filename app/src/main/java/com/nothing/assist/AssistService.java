@@ -16,7 +16,7 @@ import java.util.Calendar;
 public class AssistService extends AccessibilityService implements AccessibilityManager.AccessibilityStateChangeListener {
     private PendingIntent pendingIntent;
     private AlarmManager alarmManager;
-    private final Long notifyTime = 2 * 60 * 1000L;
+    private final Long notifyTime = 5 * 1000L;
     private Long realSleepTime;
     public static final String ACTION_NOTIFICATION_TASK = "ACTION_NOTIFICATION_TASK";
     private DataService dataService;
@@ -33,7 +33,10 @@ public class AssistService extends AccessibilityService implements Accessibility
         dataInterceptor = new DataInterceptor(dataService);
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(this, AlarmReceiver.class), PendingIntent.FLAG_IMMUTABLE);
+
+        Intent intent=new Intent(this, AlarmReceiver.class);
+        intent.setAction(ACTION_NOTIFICATION_TASK);
+        pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         accessibilityManager = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
         setAlarm(realSleepTime);
