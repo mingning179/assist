@@ -8,8 +8,11 @@ import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
@@ -17,12 +20,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.Observer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.TextUnitType
 import com.nothing.assist.ui.theme.AssistTheme
 import java.text.SimpleDateFormat
 
@@ -66,70 +72,77 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current
         val listState = rememberLazyListState()
 
-        LazyColumn(state = listState, modifier = modifier) {
-            item {
-                Text(
-                    text = "无障碍状态: ${if (wza.value) "开启" else "关闭"}",
-                    modifier = modifier,
-                )
-                Button(onClick = {
-                    turnOnWza(context)
-                }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    if (wza.value.not()) {
-                        Text("开启无障碍")
-                    } else {
-                        Text("关闭无障碍")
-                    }
-                }
-                Text(
-                    text = "最近签到时间: ${
-                        if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
-                    }",
-                    modifier = modifier,
-                )
-                Text(
-                    text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
-                    modifier = modifier,
-                )
-                Button(onClick = {
-                    dataService.cleanData()
-                    //刷新界面
-                    flushContent()
-                }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("清除数据")
-                }
-                Button(onClick = {
-                    dataService.openApp(context)
-                }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("打开目标APP")
-                }
-
-                Button(onClick = {
-                    // 加载日志
-                    logText.value = Log.readLog()
-                }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("加载日志")
-                }
-                Button(onClick = {
-                    Log.clearLog()
-                    // 清理日志后，刷新界面
-                    flushContent()
-                }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("清理日志")
-                }
+        Column(modifier = modifier) {
+            Text(
+                text = "无障碍: ${if (wza.value) "已开启" else "已关闭"}",
+                modifier = modifier,
+                style = TextStyle.Default.copy(
+                    color = if (wza.value) Color.Blue else Color.White,
+                    background = if (wza.value) Color.Green else Color.Red,
+                ),
+                fontSize = TextUnit(60f, TextUnitType.Sp),
+            )
+            Button(onClick = {
+                turnOnWza(context)
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("打开无障碍设置界面")
+            }
+            Text(
+                text = "最近签到时间: ${
+                    if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
+                }",
+                modifier = modifier,
+            )
+            Text(
+                text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
+                modifier = modifier,
+            )
+            Button(onClick = {
+                dataService.cleanData()
+                //刷新界面
+                flushContent()
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("清除数据")
+            }
+            Button(onClick = {
+                dataService.openApp(context)
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("打开目标APP")
             }
 
-            val logs = logText.value.split("\n")
-            items(logs.size) { index ->
-                val log = logs[index]
-                if (log.isNotEmpty()) {
-                    val logParts = log.split(" ", limit = 2)
-                    val dateAndTag = logParts[0]
-                    val content = if (logParts.size > 1) logParts[1] else ""
-                    Text(
-                        text = dateAndTag+"\n"+content,
-                        modifier = modifier,
-                    )
+            Button(onClick = {
+                // 加载日志
+                logText.value = Log.readLog()
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("加载日志")
+            }
+            Button(onClick = {
+                Log.clearLog()
+                // 清理日志后，刷新界面
+                flushContent()
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("清理日志")
+            }
+            LazyColumn(state = listState,
+                modifier = modifier.background(Color(0xFF000000)).width(Dp(5000f)),
+
+            ) {
+                val logs = logText.value.split("\n").reversed()
+                items(logs.size) { index ->
+                    val log = logs[index]
+                    if (log.isNotEmpty()) {
+                        val logParts = log.trim().split(" ", limit = 2)
+                        val dateAndTag = logParts[0].trim()
+                        val content = if (logParts.size > 1) logParts[1].trim() else ""
+                        Text(
+                            text = dateAndTag + "\n" + content,
+                            modifier = modifier,
+                            color = Color.White,
+                            style = TextStyle.Default.copy(
+                                fontSize = TextUnit(12f, TextUnitType.Sp),
+                            ),
+                        )
+                    }
                 }
             }
         }
