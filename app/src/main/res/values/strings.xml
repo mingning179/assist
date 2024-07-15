@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">assist</string>
+    <string name="app_name">点卯专家</string>
     <string name="accessibility_service_description">用与帮助用户实现自动化</string>
     <string name="settings_activity_title">设置</string>
     <string name="accessibility_service_label">助手</string>
