@@ -105,9 +105,14 @@ class MainActivity : ComponentActivity() {
                 Text("清除数据")
             }
             Button(onClick = {
-                dataService.openApp(context)
+                dataService.openApp(context,"com.myway.fxry")
             }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("打开目标APP")
+                Text("打开在矫通")
+            }
+            Button(onClick = {
+                dataService.openApp(context, "com.tencent.mm")
+            }, shape = AbsoluteRoundedCornerShape(8f)) {
+                Text("打开微信")
             }
 
             Button(onClick = {

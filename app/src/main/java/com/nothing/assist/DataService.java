@@ -62,8 +62,7 @@ public class DataService {
         return getSignCount() > 0;
     }
 
-    public void openApp(@NotNull Context context) {
-        String packageName = "com.myway.fxry";
+    public void openApp(@NotNull Context context,String packageName) {
         PackageManager packageManager = context.getPackageManager();
         try {
             packageManager.getPackageInfo(packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES);
