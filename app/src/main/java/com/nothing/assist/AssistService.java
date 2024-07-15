@@ -5,6 +5,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.PowerManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
@@ -16,14 +17,14 @@ import java.util.Calendar;
 public class AssistService extends AccessibilityService implements AccessibilityManager.AccessibilityStateChangeListener {
     private PendingIntent pendingIntent;
     private AlarmManager alarmManager;
-    private final Long notifyTime = 2 * 60 * 1000L;
+    private final Long notifyTime = 2 * 60 * 1000L;//时间最好不小低于5秒,系统会有个最短时间,少于特定时间还是会按照系统最低时间执行
     private Long realSleepTime;
     public static final String ACTION_NOTIFICATION_TASK = "ACTION_NOTIFICATION_TASK";
     private DataService dataService;
     private DataInterceptor dataInterceptor;
     AccessibilityManager accessibilityManager;
     private PowerManager powerManager;
-
+    private CenterReceiver centerReceiver;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -34,11 +35,17 @@ public class AssistService extends AccessibilityService implements Accessibility
         powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
-        Intent intent = new Intent(this, AlarmReceiver.class);
+        Intent intent = new Intent(this, CenterReceiver.class);
         intent.setAction(ACTION_NOTIFICATION_TASK);
         pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         accessibilityManager = (AccessibilityManager) this.getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
+
+        centerReceiver = new CenterReceiver();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+        intentFilter.addAction(Intent.ACTION_USER_PRESENT);
+        registerReceiver(centerReceiver, intentFilter);
         setAlarm(realSleepTime);
     }
 
@@ -49,8 +56,24 @@ public class AssistService extends AccessibilityService implements Accessibility
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i("AssistService", "onStartCommand");
-        if (intent != null && ACTION_NOTIFICATION_TASK.equals(intent.getAction())) {
-            processNotify();
+        if (intent == null) {
+            return super.onStartCommand(intent, flags, startId);
+        }
+        String action = intent.getAction();
+        switch (action) {
+            case Intent.ACTION_SCREEN_OFF:
+                Log.i("AssistService", "屏幕已熄灭，取消定时任务");
+                alarmManager.cancel(pendingIntent);
+                break;
+            case Intent.ACTION_USER_PRESENT:
+                Log.i("AssistService", "用户已解锁，重新设置定时任务");
+                realSleepTime=0L;
+                processNotify();
+                break;
+            case ACTION_NOTIFICATION_TASK:
+                Log.i("AssistService", "收到定时任务通知");
+                processNotify();
+                break;
         }
         return super.onStartCommand(intent, flags, startId);
     }
@@ -110,13 +133,6 @@ public class AssistService extends AccessibilityService implements Accessibility
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
             startActivity(intent);
-            if (!powerManager.isInteractive()) {
-                Log.i("AssistService", "屏幕已熄灭, 3倍时间后再次提醒");
-                realSleepTime = notifyTime * 2;
-                return;
-            } else {
-                Log.i("AssistService", "屏幕已点亮，正常弹出提醒界面");
-            }
             realSleepTime = notifyTime;
             Log.i("AssistService", "notifyThread is 结束运行");
         } finally {
@@ -140,6 +156,7 @@ public class AssistService extends AccessibilityService implements Accessibility
         super.onDestroy();
         accessibilityManager.removeAccessibilityStateChangeListener(this);
         alarmManager.cancel(pendingIntent);
+        unregisterReceiver(centerReceiver);
         Log.i("AssistService", "onDestroy 取消定时任务");
         Log.i("AssistService", "onDestroy");
     }
