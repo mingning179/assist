@@ -88,22 +88,19 @@ class MainActivity : ComponentActivity() {
             }, shape = AbsoluteRoundedCornerShape(8f)) {
                 Text("打开无障碍设置界面")
             }
-            var color=Color.Red
-            if(dataService.signCount>0){
-                 color= Color.Green
+            var color = Color.Red
+            if (dataService.signCount > 0) {
+                color = Color.Green
             }
-            Column(modifier = modifier.background(color ).width(Dp(5000f))){
-                Text(
-                    text = "最近签到时间: ${
-                        if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
-                    }",
-                    modifier = modifier,
-                )
-                Text(
-                    text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
-                    modifier = modifier,
-                )
-            }
+            Text(
+                text = "最近签到时间:\n\n ${
+                    if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
+                }\n\n今日签到次数:  ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
+                modifier = modifier
+                    .background(color)
+                    .width(Dp(5000f)),
+                fontSize = TextUnit(25f, TextUnitType.Sp),
+            )
             Button(onClick = {
                 dataService.cleanData()
                 //刷新界面
@@ -114,7 +111,7 @@ class MainActivity : ComponentActivity() {
 
             Row {
                 Button(onClick = {
-                    dataService.openApp(context,"com.myway.fxry")
+                    dataService.openApp(context, "com.myway.fxry")
                 }, shape = AbsoluteRoundedCornerShape(8f)) {
                     Text("打开在矫通")
                 }
@@ -141,12 +138,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            LazyColumn(state = listState,
+            LazyColumn(
+                state = listState,
                 modifier = modifier
                     .background(Color(0xFF000000))
                     .width(Dp(5000f)),
 
-            ) {
+                ) {
                 val logs = logText.value.split("\n").reversed()
                 items(logs.size) { index ->
                     val log = logs[index]
