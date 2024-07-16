@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -87,16 +88,22 @@ class MainActivity : ComponentActivity() {
             }, shape = AbsoluteRoundedCornerShape(8f)) {
                 Text("打开无障碍设置界面")
             }
-            Text(
-                text = "最近签到时间: ${
-                    if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
-                }",
-                modifier = modifier,
-            )
-            Text(
-                text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
-                modifier = modifier,
-            )
+            var color=Color.Red
+            if(dataService.signCount>0){
+                 color= Color.Green
+            }
+            Column(modifier = modifier.background(color ).width(Dp(5000f))){
+                Text(
+                    text = "最近签到时间: ${
+                        if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
+                    }",
+                    modifier = modifier,
+                )
+                Text(
+                    text = "今日签到次数: ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
+                    modifier = modifier,
+                )
+            }
             Button(onClick = {
                 dataService.cleanData()
                 //刷新界面
@@ -104,32 +111,40 @@ class MainActivity : ComponentActivity() {
             }, shape = AbsoluteRoundedCornerShape(8f)) {
                 Text("清除数据")
             }
-            Button(onClick = {
-                dataService.openApp(context,"com.myway.fxry")
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("打开在矫通")
-            }
-            Button(onClick = {
-                dataService.openApp(context, "com.tencent.mm")
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("打开微信")
+
+            Row {
+                Button(onClick = {
+                    dataService.openApp(context,"com.myway.fxry")
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("打开在矫通")
+                }
+                Button(onClick = {
+                    dataService.openApp(context, "com.tencent.mm")
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("打开微信")
+                }
             }
 
-            Button(onClick = {
-                // 加载日志
-                logText.value = Log.readLog()
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("加载日志")
+            Row {
+                Button(onClick = {
+                    // 加载日志
+                    logText.value = Log.readLog()
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("加载日志")
+                }
+                Button(onClick = {
+                    Log.clearLog()
+                    // 清理日志后，刷新界面
+                    flushContent()
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("清理日志")
+                }
             }
-            Button(onClick = {
-                Log.clearLog()
-                // 清理日志后，刷新界面
-                flushContent()
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("清理日志")
-            }
+
             LazyColumn(state = listState,
-                modifier = modifier.background(Color(0xFF000000)).width(Dp(5000f)),
+                modifier = modifier
+                    .background(Color(0xFF000000))
+                    .width(Dp(5000f)),
 
             ) {
                 val logs = logText.value.split("\n").reversed()
