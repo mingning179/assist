@@ -40,7 +40,7 @@ public class AssistService extends AccessibilityService implements Accessibility
 
         centerReceiver = new CenterReceiver();
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(Intent.ACTION_SCREEN_ON);
+        intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
         intentFilter.addAction(Intent.ACTION_USER_PRESENT);
         registerReceiver(centerReceiver, intentFilter);
         setAlarm(realSleepTime);
