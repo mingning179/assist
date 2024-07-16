@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.PowerManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -23,7 +22,6 @@ public class AssistService extends AccessibilityService implements Accessibility
     private DataService dataService;
     private DataInterceptor dataInterceptor;
     AccessibilityManager accessibilityManager;
-    private PowerManager powerManager;
     private CenterReceiver centerReceiver;
     @Override
     public void onCreate() {
@@ -32,7 +30,6 @@ public class AssistService extends AccessibilityService implements Accessibility
         initConfig();
         dataService = new DataService(this);
         dataInterceptor = new DataInterceptor(dataService);
-        powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
         Intent intent = new Intent(this, CenterReceiver.class);
@@ -60,6 +57,10 @@ public class AssistService extends AccessibilityService implements Accessibility
             return super.onStartCommand(intent, flags, startId);
         }
         String action = intent.getAction();
+        if(action==null) {
+            Log.i("AssistService", "Action为空");
+            return super.onStartCommand(intent, flags, startId);
+        }
         switch (action) {
             case Intent.ACTION_SCREEN_OFF:
                 Log.i("AssistService", "屏幕已熄灭，取消定时任务");
@@ -73,6 +74,9 @@ public class AssistService extends AccessibilityService implements Accessibility
             case ACTION_NOTIFICATION_TASK:
                 Log.i("AssistService", "收到定时任务通知");
                 processNotify();
+                break;
+            default:
+                Log.i("AssistService", "未知Action: " + action);
                 break;
         }
         return super.onStartCommand(intent, flags, startId);
@@ -110,6 +114,26 @@ public class AssistService extends AccessibilityService implements Accessibility
                 return;
             }
             //未签到
+            //判断是否是0-8点之间
+            Calendar calendar = Calendar.getInstance();
+            int hour = calendar.get(Calendar.HOUR_OF_DAY);
+            if (hour < 8) {
+                //休眠到8点
+                //计算当前时间到今天早上8点的时间差
+                calendar.set(Calendar.HOUR_OF_DAY, 8); // Set hour to 8 AM
+                calendar.set(Calendar.MINUTE, 0); // Set minute to 0
+                calendar.set(Calendar.SECOND, 0); // Set second to 0
+                calendar.set(Calendar.MILLISECOND, 0); // Set millisecond to 0 for precision
+
+                long todayEightAMTimestamp = calendar.getTimeInMillis();
+                long currentTime = System.currentTimeMillis();
+                long sleepTime = todayEightAMTimestamp - currentTime;
+                Log.i("AssistService", "未签到(0-8点不提醒), 休眠到今天早上8点, 时长: " + sleepTime);
+                realSleepTime = sleepTime;
+                return;
+            }
+
+
             if (rootInActiveWindow != null) {
                 String currentPackageName = rootInActiveWindow.getPackageName().toString();
                 Log.i("AssistService", "processNotify:" + currentPackageName);
