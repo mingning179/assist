@@ -12,6 +12,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 
 public class AssistService extends AccessibilityService implements AccessibilityManager.AccessibilityStateChangeListener {
     private PendingIntent pendingIntent;
@@ -21,8 +22,10 @@ public class AssistService extends AccessibilityService implements Accessibility
     public static final String ACTION_NOTIFICATION_TASK = "ACTION_NOTIFICATION_TASK";
     private DataService dataService;
     private DataInterceptor dataInterceptor;
-    AccessibilityManager accessibilityManager;
+    private AccessibilityManager accessibilityManager;
     private CenterReceiver centerReceiver;
+    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -83,9 +86,21 @@ public class AssistService extends AccessibilityService implements Accessibility
     }
 
     private void setAlarm(long notifyTime) {
+        // Ensure notifyTime is not too small
+        long minNotifyTime = 5 * 1000L; // 5 seconds
+        if (notifyTime < minNotifyTime) {
+            notifyTime = minNotifyTime;
+        }
+
+        // Cancel the previous alarm
         alarmManager.cancel(pendingIntent);
-        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + notifyTime, pendingIntent);
-        Log.i("AssistService", "添加定时任务(添加之前会取消之前的定时任务): " + notifyTime + "ms");
+
+        // Set the new alarm
+        long triggerTime = System.currentTimeMillis() + notifyTime;
+        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+        // Log the alarm details
+        String triggerTimeString = sdf.format(new Date(triggerTime));
+        Log.i("AssistService", "添加定时任务(添加之前会取消之前的定时任务): " + notifyTime + "ms, 触发时间: " + triggerTimeString);
     }
 
     private void processNotify() {
@@ -97,7 +112,6 @@ public class AssistService extends AccessibilityService implements Accessibility
                 //已经签到
                 //休眠到明天早上8点
                 //计算当前时间到明天早上8点的时间差
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 Calendar calendar = Calendar.getInstance();
                 calendar.add(Calendar.DAY_OF_MONTH, 1); // Add one day to the current date
                 calendar.set(Calendar.HOUR_OF_DAY, 8); // Set hour to 8 AM
@@ -182,7 +196,6 @@ public class AssistService extends AccessibilityService implements Accessibility
         alarmManager.cancel(pendingIntent);
         unregisterReceiver(centerReceiver);
         Log.i("AssistService", "onDestroy 取消定时任务");
-        Log.i("AssistService", "onDestroy");
     }
 
     @Override

@@ -23,21 +23,21 @@ public class DataInterceptor {
             // 拦截 在矫通 应用内的数据
             if (packageName.equals("com.myway.fxry")) {
                 if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                    Log.i(TAG, String.format("窗口内容改变事件: %s ", event.getContentDescription()));
+//                    Log.i(TAG, String.format("窗口内容改变事件: %s ", event.getContentDescription()));
                     recordMy(event);
                 }
                 if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED) {
-                    Log.i(TAG, String.format("View被点击事件: %s ", !event.getText().isEmpty() ? event.getText().get(0) : null));
+//                    Log.i(TAG, String.format("View被点击事件: %s ", !event.getText().isEmpty() ? event.getText().get(0) : null));
                     recordSign(event);
                 }
                 if (shouldClickMy && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-                    Log.i(TAG, String.format("待执行点击: %s ", event.getContentDescription()));
+//                    Log.i(TAG, String.format("待执行点击: %s ", event.getContentDescription()));
                     clickMy(event);
                 }
-                Log.i(TAG, String.format("onAccessibilityEvent: %s ", event));
+//                Log.i(TAG, String.format("onAccessibilityEvent: %s ", event));
             }
         } catch (Exception e) {
-            Log.e(TAG, "interceptData: ", e);
+            Log.e(TAG, "处理事件失败", e);
         }
     }
 
