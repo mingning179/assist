@@ -1,4 +1,4 @@
-package com.nothing.assist;
+package com.nothing.assist.service;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

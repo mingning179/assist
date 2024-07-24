@@ -1,7 +1,9 @@
-package com.nothing.assist;
+package com.nothing.assist.processor;
 
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import com.nothing.assist.common.Log;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

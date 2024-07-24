@@ -1,4 +1,4 @@
-package com.nothing.assist;
+package com.nothing.assist.service;
 
 import android.accessibilityservice.AccessibilityService;
 import android.app.AlarmManager;
@@ -9,6 +9,11 @@ import android.content.IntentFilter;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import com.nothing.assist.processor.DataInterceptor;
+import com.nothing.assist.processor.DataService;
+import com.nothing.assist.common.Log;
+import com.nothing.assist.MainActivity;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;

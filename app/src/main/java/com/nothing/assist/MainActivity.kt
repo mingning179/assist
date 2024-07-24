@@ -1,17 +1,17 @@
 package com.nothing.assist
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,22 +30,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
+import androidx.compose.ui.unit.dp
+import com.nothing.assist.common.Log
+import com.nothing.assist.common.PermissionUtils
+import com.nothing.assist.processor.DataService
 import com.nothing.assist.ui.theme.AssistTheme
 import java.text.SimpleDateFormat
 
 class MainActivity : ComponentActivity() {
-    private var wza = mutableStateOf(false)
+    private var accessibilityOn = mutableStateOf(false)
     private lateinit var dataService: DataService
     private var sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     private var logText = mutableStateOf("")
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val accessibilityManager =
             this.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        accessibilityManager.addAccessibilityStateChangeListener { enabled -> wza.value = enabled }
-        wza.value = accessibilityManager.isEnabled
+        accessibilityManager.addAccessibilityStateChangeListener { enabled -> accessibilityOn.value = enabled }
+        accessibilityOn.value = accessibilityManager.isEnabled
         dataService = DataService(this)
         flushContent()
     }
@@ -72,57 +75,72 @@ class MainActivity : ComponentActivity() {
     fun Greeting(name: String, modifier: Modifier = Modifier) {
         val context = LocalContext.current
         val listState = rememberLazyListState()
-
-        Column(modifier = modifier) {
+        Column(modifier = modifier.padding(2.dp)) {
+            var accessibilityColor = Color.Red
+            if (accessibilityOn.value ) {
+                accessibilityColor = Color.Green
+            }
             Text(
-                text = "无障碍: ${if (wza.value) "已开启" else "已关闭"}",
-                modifier = modifier,
-                style = TextStyle.Default.copy(
-                    color = if (wza.value) Color.Blue else Color.White,
-                    background = if (wza.value) Color.Green else Color.Red,
-                ),
-                fontSize = TextUnit(60f, TextUnitType.Sp),
+                text = "无障碍: ${if (accessibilityOn.value) "已开启" else "已关闭"}",
+                modifier = Modifier.fillMaxWidth().background(accessibilityColor),
+                fontSize = TextUnit(40f, TextUnitType.Sp),
             )
-            Button(onClick = {
-                turnOnWza(context)
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("打开无障碍设置界面")
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)){
+                Button(onClick = {
+                    PermissionUtils.openAccessibility_settings(context)
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("无障碍")
+                }
+                Button(onClick = {
+                    PermissionUtils.openRedmiBackgroundPopupSetting(context)
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("后台弹窗")
+                }
+                Button(onClick = {
+                    PermissionUtils.openRedmiAutoStartSetting(context)
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("自启动")
+                }
+                Button(onClick = {
+                    PermissionUtils.openBatteryOptimizationSetting(context)
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("省电策略")
+                }
             }
-            var color = Color.Red
+
+            var signColor = Color.Red
             if (dataService.signCount > 0) {
-                color = Color.Green
+                signColor = Color.Green
             }
             Text(
-                text = "最近签到时间:\n\n ${
+                text = "最近签到时间:\n ${
                     if (dataService.lastSignTime == null) "无" else sdf.format(dataService.lastSignTime)
                 }\n\n今日签到次数:  ${if (dataService.signCount != -1) dataService.signCount else "未知"}",
-                modifier = modifier
-                    .background(color)
-                    .width(Dp(5000f)),
-                fontSize = TextUnit(25f, TextUnitType.Sp),
+                modifier = Modifier
+                    .background(signColor)
+                    .fillMaxWidth(),
+                fontSize = TextUnit(18f, TextUnitType.Sp),
             )
-            Button(onClick = {
-                dataService.cleanData()
-                //刷新界面
-                flushContent()
-            }, shape = AbsoluteRoundedCornerShape(8f)) {
-                Text("清除数据")
-            }
-
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                Button(onClick = {
+                    dataService.cleanData()
+                    //刷新界面
+                    flushContent()
+                }, shape = AbsoluteRoundedCornerShape(8f)) {
+                    Text("清除数据")
+                }
                 Button(onClick = {
                     dataService.openApp(context, "com.myway.fxry")
                 }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("打开在矫通")
+                    Text("在矫通")
                 }
                 Button(onClick = {
                     dataService.openApp(context, "com.tencent.mm")
                 }, shape = AbsoluteRoundedCornerShape(8f)) {
-                    Text("打开微信")
+                    Text("微信")
                 }
             }
-
-            Row {
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 Button(onClick = {
                     // 加载日志
                     logText.value = Log.readLog()
@@ -137,14 +155,12 @@ class MainActivity : ComponentActivity() {
                     Text("清理日志")
                 }
             }
-
             LazyColumn(
                 state = listState,
-                modifier = modifier
-                    .background(Color(0xFF000000))
-                    .width(Dp(5000f)),
-
-                ) {
+                modifier = Modifier.background(Color(0xFF000000))
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(15.dp)
+            ) {
                 val logs = logText.value.split("\n").reversed()
                 items(logs.size) { index ->
                     val log = logs[index]
@@ -154,7 +170,7 @@ class MainActivity : ComponentActivity() {
                         val content = if (logParts.size > 1) logParts[1].trim() else ""
                         Text(
                             text = dateAndTag + "\n" + content,
-                            modifier = modifier,
+                            modifier = Modifier.padding(2.dp),
                             color = Color.White,
                             style = TextStyle.Default.copy(
                                 fontSize = TextUnit(12f, TextUnitType.Sp),
@@ -164,13 +180,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    fun turnOnWza(context: Context) {
-        // 引导用户到无障碍服务设置页面
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
     }
 
     @Preview(showBackground = true, backgroundColor = 0xFFFF0000)

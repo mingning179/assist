@@ -1,4 +1,4 @@
-package com.nothing.assist;
+package com.nothing.assist.common;
 
 import android.content.Context;
 

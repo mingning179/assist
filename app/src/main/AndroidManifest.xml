@@ -14,11 +14,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Assist"
         tools:targetApi="31">
-        <receiver android:name=".CenterReceiver"
+        <receiver android:name=".service.CenterReceiver"
             android:exported="true">
         </receiver>
         <service
-            android:name=".AssistService"
+            android:name=".service.AssistService"
             android:exported="false"
             android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -41,12 +41,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".SettingActivity"
-            android:exported="true"
-            android:label="@string/settings_activity_title"
-            android:theme="@style/Theme.Assist">
         </activity>
     </application>
 

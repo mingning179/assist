@@ -1,4 +1,4 @@
-package com.nothing.assist;
+package com.nothing.assist.processor;
 
 import android.content.Context;
 import android.content.Intent;
