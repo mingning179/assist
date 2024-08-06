@@ -1,6 +1,6 @@
 package com.nothing.assist.common;
 
-import android.content.Context;
+import android.app.Application;
 
 import androidx.lifecycle.MutableLiveData;
 
@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -18,40 +19,28 @@ public class Log {
     private static File logFile;
     private static final SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-HH:mm:ss", Locale.getDefault());
     public static MutableLiveData<String> liveData = new MutableLiveData<>();
+    private static boolean isInitialized = false;
 
-    public static void initialize(Context context) {
+    public static void initialize(Application context) {
+        if (isInitialized) {
+            return;
+        }
         logFile = new File(context.getFilesDir(), "log.txt");
+        isInitialized = true;
     }
 
-    public static int d(String tag, String msg) {
-        writeToFile(tag, msg);
-        return android.util.Log.d(tag, msg);
-    }
 
     public static int i(String tag, String msg) {
         writeToFile(tag, msg);
         return android.util.Log.i(tag, msg);
     }
 
-    public static int w(String tag, String msg) {
-        writeToFile(tag, msg);
-        return android.util.Log.w(tag, msg);
-    }
 
     public static int e(String tag, String msg, Exception e) {
         writeToFile(tag, msg);
         return android.util.Log.e(tag, msg, e);
     }
 
-    public static int v(String tag, String msg) {
-        writeToFile(tag, msg);
-        return android.util.Log.v(tag, msg);
-    }
-
-    public static int wtf(String tag, String msg) {
-        writeToFile(tag, msg);
-        return android.util.Log.wtf(tag, msg);
-    }
 
     private static void writeToFile(String tag, String msg) {
         try (PrintWriter out = new PrintWriter(new FileOutputStream(logFile, true))) {
@@ -65,7 +54,7 @@ public class Log {
 
     public static String readLog() {
         StringBuilder log = new StringBuilder();
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile)))) {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(Files.newInputStream(logFile.toPath())))) {
             String line;
             while ((line = in.readLine()) != null) {
                 log.append(line).append('\n');
